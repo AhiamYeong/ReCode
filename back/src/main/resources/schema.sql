@@ -1,5 +1,5 @@
 USE record;
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
                        user_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        record_id VARCHAR(255) NOT NULL,
                        boj_id VARCHAR(255) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE users (
                        is_deleted BOOLEAN NOT NULL
 );
 
-CREATE TABLE follows (
+CREATE TABLE IF NOT EXISTS follows (
                          follow_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                          follower_id BIGINT NOT NULL,
                          following_id BIGINT NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE follows (
                          FOREIGN KEY (following_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE notes (
+CREATE TABLE IF NOT EXISTS notes (
                        note_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        user_id BIGINT NOT NULL,
                        problem_id INT NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE notes (
                        FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
                           comment_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                           user_id BIGINT NOT NULL,
                           note_id BIGINT NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE comments (
                           FOREIGN KEY (note_id) REFERENCES notes(note_id)
 );
 
-CREATE TABLE likes (
+CREATE TABLE IF NOT EXISTS likes (
                        like_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        note_id BIGINT NOT NULL,
                        user_id BIGINT NOT NULL,
@@ -62,12 +62,12 @@ CREATE TABLE likes (
                        FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS tags (
                       tag_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                       tag_name VARCHAR(20) NOT NULL UNIQUE
 );
 
-CREATE TABLE notes_tags (
+CREATE TABLE IF NOT EXISTS notes_tags (
                             tag_id INT NOT NULL,
                             note_id BIGINT NOT NULL,
                             PRIMARY KEY (tag_id, note_id),
