@@ -1,7 +1,7 @@
-USE record;
+USE recode;
 CREATE TABLE IF NOT EXISTS users (
                        user_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                       record_id VARCHAR(255) NOT NULL,
+                       recode_id VARCHAR(255) NOT NULL,
                        boj_id VARCHAR(255) NOT NULL,
                        email VARCHAR(255) NOT NULL,
                        nickname VARCHAR(20) NOT NULL,
