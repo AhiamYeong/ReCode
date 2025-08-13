@@ -188,7 +188,10 @@ export default function NoteDetailPage() {
           <div className="container flex flex-row justify-between">
             <div className="text-2xl font-bold">
               <div>{note.noteTitle}</div>
-              <div className="text-sm font-bold">작성일: {date} </div>
+              <div className="text-sm font-bold flex gap-1">
+                <div>작성일: {date} </div>
+                <div>{note.isPublic ? '전체 공개' : '비공개'}</div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {image ? (
@@ -291,12 +294,12 @@ export default function NoteDetailPage() {
             <div>
               <hr className="my-3 border-t-2 border-gray-300" />
               <div className="flex flex-row justify-between">
-                <div className="tags">
+                <div className="tags flex gap-1">
                   {note.tags.map((tag) => (
                     <Tag key={tag.tagId} tagName={tag.tagName}></Tag>
                   ))}
                 </div>
-                <div className="likes-and-comments flex flex-row">
+                <div className="likes-and-comments flex flex-row gap-2">
                   <div>
                     <HeartIcon
                       liked={note.liked}
@@ -335,6 +338,7 @@ export default function NoteDetailPage() {
           {/* 댓글 */}
           <div className="comment-container mt-6">
             <div className="w-full mb-4">
+              <div className="text-sm">{commentText.length}자 / 100자</div>
               <textarea
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition duration-150 ease-in-out resize-none"
                 name="comment-create"
@@ -343,6 +347,7 @@ export default function NoteDetailPage() {
                 placeholder="댓글을 입력하세요..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+                maxLength={100}
               ></textarea>
               <div className="flex justify-end mt-2">
                 <button

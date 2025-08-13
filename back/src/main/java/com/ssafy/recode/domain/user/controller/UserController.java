@@ -1,5 +1,6 @@
 package com.ssafy.recode.domain.user.controller;
 
+import com.ssafy.recode.auth.CustomUserDetails;
 import com.ssafy.recode.domain.user.CookieUtil;
 import com.ssafy.recode.domain.user.dto.request.*;
 import com.ssafy.recode.domain.user.dto.response.*;
@@ -10,8 +11,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,13 +53,51 @@ public class UserController {
     }
 
     /** 3. 백준 ID 유효성 확인 */
+
     @Operation(summary = "백준 ID 유효성 확인", description = "입력한 백준 ID가 유효한지와 중복 여부를 확인합니다.")
     @PostMapping("/bojId_check")
-    public ResponseEntity<ApiSingleResponse<Boolean>> validateBojId(@RequestBody BojIdCheckRequest bojId) {
-        int tier = userService.fetchBojTier(bojId.getBojId());
-        boolean existsInDb = userService.existsByBojId(bojId.getBojId());
-        boolean isValid = tier >= 0 && !existsInDb;
-        return ResponseEntity.ok(ApiSingleResponse.from(isValid));
+    public ResponseEntity<ApiSingleResponse<BojIdCheckResponse>> validateBojId(@RequestBody BojIdCheckRequest request) {
+        final String bojId = request.getBojId().trim();
+
+        // 1) DB 중복 먼저 체크
+        boolean existsInDb = userService.existsByBojId(bojId);
+        if (existsInDb) {
+            BojIdCheckResponse body = BojIdCheckResponse.builder()
+                    .status(BojIdCheckStatus.ALREADY_REGISTERED)
+                    .message("이미 회원가입된 아이디입니다.")
+                    .build();
+            return ResponseEntity.ok(ApiSingleResponse.from(body));
+        }
+
+        // 2) 백준 존재 여부(티어) 확인
+        int tier;
+        try {
+            tier = userService.fetchBojTier(bojId);
+        } catch (Exception  e) {
+            // 외부 호출 실패와 '없는 아이디'를 구분하고 싶다면 별도 코드로 반환 가능
+            BojIdCheckResponse body = BojIdCheckResponse.builder()
+                    .status(BojIdCheckStatus.NOT_FOUND_ON_BOJ)
+                    .message("백준 조회에 실패했거나 아이디가 존재하지 않습니다.")
+                    .build();
+            return ResponseEntity.ok(ApiSingleResponse.from(body));
+            // 또는 ResponseEntity.status(HttpStatus.BAD_GATEWAY) 로 에러 구분
+        }
+
+        if (tier < 0) {
+            BojIdCheckResponse body = BojIdCheckResponse.builder()
+                    .status(BojIdCheckStatus.NOT_FOUND_ON_BOJ)
+                    .message("백준에 없는 아이디입니다.")
+                    .build();
+            return ResponseEntity.ok(ApiSingleResponse.from(body));
+        }
+
+        // 3) 가입 가능
+        BojIdCheckResponse body = BojIdCheckResponse.builder()
+                .status(BojIdCheckStatus.AVAILABLE)
+                .message("회원 가입 가능한 아이디입니다.")
+                .build();
+
+        return ResponseEntity.ok(ApiSingleResponse.from(body));
     }
 
     /** 4. Recode ID 중복 확인 */
@@ -158,12 +199,21 @@ public class UserController {
 
     /** 14. 백준 쿠키 저장 **/
     @Operation(summary = "백준 쿠키 저장", description = "백준에서 세션 쿠키를 추출하여 저장합니다.")
-    @PreAuthorize("#userId == principal.id")
     @PostMapping("/{userId}/boj-cookies")
-    public ResponseEntity<?> saveBojCookies(@PathVariable Long userId, @RequestBody CookieRequestDto cookieRequestDto ) {
+    public ResponseEntity<?> saveBojCookies(
+            @PathVariable Long userId,
+            @RequestBody CookieRequestDto cookieRequestDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long authenticatedUserId = userDetails.getUser().getUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+
         userService.saveBojCookieValue(userId, cookieRequestDto.getCookieValue());
         return ResponseEntity.ok("백준 쿠키가 성공적으로 저장되었습니다.");
     }
+
 
     /** 15. 이메일 변경 **/
     @Operation(summary = "이메일 변경", description = "특정 사용자의 이메일을 변경합니다.")
